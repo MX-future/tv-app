@@ -39,6 +39,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
       body: Column(
         children: [
           _buildSourceBar(state),
+          if (state.loading) const LinearProgressIndicator(minHeight: 2),
           _buildSearchBar(),
           Expanded(child: _buildBody(state)),
         ],
@@ -147,11 +148,39 @@ class _ChannelListPageState extends State<ChannelListPage> {
               '频道加载失败',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 6),
+            if (state.fallbackNote != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3A2E10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.autorenew, size: 15, color: Color(0xFFFFC107)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        state.fallbackNote!,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFFFFD54F)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12.5, color: Colors.white54),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '请检查网络连接，或点击上方直播源切换其它源',
+              style: TextStyle(fontSize: 11.5, color: Colors.white38),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(

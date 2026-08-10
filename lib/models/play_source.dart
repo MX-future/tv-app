@@ -6,6 +6,7 @@ class PlaySource {
     required this.url,
     this.builtIn = false,
     this.epgUrl,
+    this.mirrors = const [],
   });
 
   /// 唯一标识
@@ -23,6 +24,12 @@ class PlaySource {
   /// EPG 节目单地址（解析自 m3u 头部 x-tvg-url，可为空）
   final String? epgUrl;
 
+  /// 同内容镜像地址：主地址失败时按顺序尝试
+  final List<String> mirrors;
+
+  /// 全部候选地址（主地址 + 镜像），按尝试顺序
+  List<String> get candidates => [url, ...mirrors];
+
   /// 默认 EPG 接口（fanmingming/live 提供）
   static const String defaultEpgUrl = 'https://live.fanmingming.cn/e.xml';
 
@@ -32,6 +39,7 @@ class PlaySource {
         url: url,
         builtIn: builtIn,
         epgUrl: epgUrl ?? this.epgUrl,
+        mirrors: mirrors,
       );
 
   Map<String, dynamic> toJson() => {
@@ -40,6 +48,7 @@ class PlaySource {
         'url': url,
         'builtIn': builtIn,
         'epgUrl': epgUrl,
+        'mirrors': mirrors,
       };
 
   factory PlaySource.fromJson(Map<String, dynamic> json) => PlaySource(
@@ -48,5 +57,6 @@ class PlaySource {
         url: json['url'] as String? ?? '',
         builtIn: json['builtIn'] as bool? ?? false,
         epgUrl: json['epgUrl'] as String?,
+        mirrors: (json['mirrors'] as List?)?.cast<String>() ?? const [],
       );
 }

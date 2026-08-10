@@ -34,6 +34,9 @@ class AppState extends ChangeNotifier {
   bool loading = false;
   String? loadError;
 
+  /// 自动切换源的提示（如"原源不可用，已自动切换…"）
+  String? fallbackNote;
+
   /// 当前源使用的 EPG 地址
   String? epgUrl;
 
@@ -59,12 +62,15 @@ class AppState extends ChangeNotifier {
     _favorites.addAll(_store.favorites);
     recent = _store.recent;
     keepScreenOn = _store.keepScreenOn;
+    // 立即刷新 UI：源条立即可见，不依赖网络请求完成
+    notifyListeners();
 
-    // 恢复上次使用的源
+    // 恢复上次使用的源（内部自动轮询镜像/其他源）
     final lastId = _store.lastSourceId;
-    final target = sources.where((s) => s.id == lastId).firstOrNull ?? sources.firstOrNull;
+    final target =
+        sources.where((s) => s.id == lastId).firstOrNull ?? sources.firstOrNull;
     if (target != null) {
-      await loadChannels(target, silent: true);
+      await loadChannels(target);
     }
     notifyListeners();
   }
@@ -72,29 +78,75 @@ class AppState extends ChangeNotifier {
   // ---------- 频道加载 ----------
 
   /// 加载指定源的频道列表。
-  Future<void> loadChannels(PlaySource source, {bool silent = false}) async {
-    if (!silent) {
-      loading = true;
-      loadError = null;
-      notifyListeners();
-    }
-    try {
-      final text = await StreamLoader.fetchText(source.url);
-      final parsed = PlaylistParser.parse(text, sourceName: source.name);
-      if (parsed.channels.isEmpty) {
-        throw Exception('播放列表为空，请检查源地址');
+  ///
+  /// 失败时自动按序尝试：该源镜像地址 → 其他可用源（内置优先）。
+  /// 加载期间 [loading] 为 true，用于 UI 反馈。
+  Future<void> loadChannels(PlaySource source) async {
+    loading = true;
+    loadError = null;
+    fallbackNote = null;
+    notifyListeners();
+
+    // 1) 组装候选地址：目标源主地址+镜像 → 其他源（内置优先）
+    final ordered = <String>[];
+    void addCandidates(PlaySource s) {
+      for (final u in s.candidates) {
+        if (!ordered.contains(u)) ordered.add(u);
       }
-      channels = parsed.channels;
-      activeSource = source;
-      epgUrl = parsed.epgUrl;
-      _rebuildGroups();
-      await _store.setLastSourceId(source.id);
-    } catch (e) {
-      loadError = e.toString();
-    } finally {
-      loading = false;
-      notifyListeners();
     }
+
+    addCandidates(source);
+    for (final s in _fallbackSources(source)) {
+      addCandidates(s);
+    }
+
+    // 2) 依次尝试
+    String? lastError;
+    String? usedUrl;
+    for (final url in ordered) {
+      try {
+        final text = await StreamLoader.fetchText(url);
+        final parsed = PlaylistParser.parse(text, sourceName: source.name);
+        if (parsed.channels.isEmpty) {
+          throw Exception('播放列表为空，请检查源地址');
+        }
+        channels = parsed.channels;
+        activeSource = source;
+        epgUrl = parsed.epgUrl;
+        _rebuildGroups();
+        await _store.setLastSourceId(source.id);
+        usedUrl = url;
+        lastError = null;
+        break;
+      } catch (e) {
+        lastError = e.toString();
+      }
+    }
+
+    // 3) 结果与提示
+    if (lastError != null) {
+      loadError = lastError;
+    } else if (usedUrl != null && usedUrl != source.url) {
+      final usedName = _nameOfUrl(usedUrl) ?? source.name;
+      fallbackNote = '「${source.name}」不可用，已自动使用 $usedName';
+    }
+    loading = false;
+    notifyListeners();
+  }
+
+  /// 其他可作为兜底的源（内置优先，排除 [source] 自身）。
+  List<PlaySource> _fallbackSources(PlaySource source) {
+    final rest = sources.where((s) => s.id != source.id).toList();
+    rest.sort((a, b) => (a.builtIn ? 0 : 1) - (b.builtIn ? 0 : 1));
+    return rest;
+  }
+
+  /// 根据地址反查所属源名称。
+  String? _nameOfUrl(String url) {
+    for (final s in sources) {
+      if (s.candidates.contains(url)) return s.name;
+    }
+    return null;
   }
 
   void _rebuildGroups() {
