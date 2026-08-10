@@ -247,7 +247,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> addRecent(Channel channel) async {
     recent.removeWhere((c) => c.id == channel.id);
-    recent.insert(0, channel);
+    recent.insert(0, channel.withRecentAt(DateTime.now()));
     if (recent.length > 30) {
       recent = recent.sublist(0, 30);
     }
@@ -257,6 +257,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> clearRecent() async {
     recent = [];
+    await _store.setRecent(recent);
+    notifyListeners();
+  }
+
+  /// 删除单条最近播放记录。
+  Future<void> removeRecent(Channel channel) async {
+    recent.removeWhere((c) => c.id == channel.id);
     await _store.setRecent(recent);
     notifyListeners();
   }

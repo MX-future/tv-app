@@ -4,8 +4,9 @@ import '../app.dart';
 import 'channel_list_page.dart';
 import 'favorites_page.dart';
 import 'mine_page.dart';
+import 'recent_page.dart';
 
-/// 主框架：底部导航切换 直播 / 收藏 / 我的。
+/// 主框架：底部导航切换 直播 / 最近 / 收藏 / 我的。
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -25,6 +26,7 @@ class _HomePageState extends State<HomePage> {
         index: _tab,
         children: const [
           ChannelListPage(),
+          RecentPage(),
           FavoritesPage(),
           MinePage(),
         ],
@@ -44,6 +46,11 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.live_tv_outlined),
               selectedIcon: Icon(Icons.live_tv),
               label: '直播',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history),
+              label: '最近',
             ),
             NavigationDestination(
               icon: Icon(Icons.star_outline),

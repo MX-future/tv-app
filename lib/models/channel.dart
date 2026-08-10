@@ -8,6 +8,7 @@ class Channel {
     this.logo,
     this.sourceName,
     this.altUrls = const [],
+    this.recentAt,
   });
 
   /// 频道显示名（如 "CCTV-1综合"）
@@ -30,6 +31,9 @@ class Channel {
 
   /// 备用播放地址（来自其他源的同名频道，主地址失败时依次尝试）
   final List<String> altUrls;
+
+  /// 最近观看时间（仅最近播放列表使用）
+  final DateTime? recentAt;
 
   /// 唯一标识（收藏用）
   String get id => '$name|$url';
@@ -55,6 +59,18 @@ class Channel {
         logo: logo,
         sourceName: sourceName,
         altUrls: alts,
+        recentAt: recentAt,
+      );
+
+  Channel withRecentAt(DateTime t) => Channel(
+        name: name,
+        group: group,
+        url: url,
+        tvgName: tvgName,
+        logo: logo,
+        sourceName: sourceName,
+        altUrls: altUrls,
+        recentAt: t,
       );
 
   Map<String, dynamic> toJson() => {
@@ -65,6 +81,7 @@ class Channel {
         'logo': logo,
         'sourceName': sourceName,
         'altUrls': altUrls,
+        'recentAt': recentAt?.toIso8601String(),
       };
 
   factory Channel.fromJson(Map<String, dynamic> json) => Channel(
@@ -75,5 +92,8 @@ class Channel {
         logo: json['logo'] as String?,
         sourceName: json['sourceName'] as String?,
         altUrls: (json['altUrls'] as List?)?.cast<String>() ?? const [],
+        recentAt: json['recentAt'] != null
+            ? DateTime.tryParse(json['recentAt'] as String)
+            : null,
       );
 }
