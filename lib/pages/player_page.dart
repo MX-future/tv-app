@@ -115,7 +115,13 @@ class _PlayerPageState extends State<PlayerPage> {
       if (!mounted) return;
       if (isMobile) {
         final ok = await _showTrafficConfirm();
-        if (!mounted || ok != true) return; // 取消：不切换频道
+        if (!mounted) return;
+        if (ok != true) {
+          // 用户取消：立即停止播放并退出播放页，避免流量继续消耗
+          await _player.stop();
+          if (mounted) Navigator.of(context).maybePop();
+          return;
+        }
         _trafficConfirmed = true;
       }
     }
