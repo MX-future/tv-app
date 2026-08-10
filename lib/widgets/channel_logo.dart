@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 /// 频道台标组件：加载 tvg-logo，失败时自动尝试镜像域名，最终显示文字占位。
+///
+/// 台标使用 `BoxFit.contain` 完整显示（不裁切台标内文字），
+/// 文字占位通过 `FittedBox` 自适应缩放，保证永不溢出截断。
 class ChannelLogo extends StatefulWidget {
   const ChannelLogo({
     super.key,
@@ -59,37 +62,44 @@ class _ChannelLogoState extends State<ChannelLogo> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     if (_urls.isEmpty || _urlIndex >= _urls.length) {
       return _placeholder(context);
     }
     final url = _urls[_urlIndex];
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
-      child: Image.network(
-        url,
+      child: Container(
         width: widget.size,
         height: widget.size,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) {
-          // 当前地址加载失败：尝试下一个候选地址
-          if (_urlIndex < _urls.length - 1) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() => _urlIndex++);
-            });
-            // 返回占位避免空白闪烁
+        color: scheme.surfaceContainerHighest,
+        alignment: Alignment.center,
+        child: Image.network(
+          url,
+          width: widget.size,
+          height: widget.size,
+          // 完整显示台标，避免 cover 裁掉台标中的文字
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) {
+            // 当前地址加载失败：尝试下一个候选地址
+            if (_urlIndex < _urls.length - 1) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _urlIndex++);
+              });
+            }
             return _placeholder(context);
-          }
-          return _placeholder(context);
-        },
+          },
+        ),
       ),
     );
   }
 
   Widget _placeholder(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final short = widget.name.length >= 2
-        ? widget.name.substring(widget.name.length - 2)
-        : widget.name;
+    final name = widget.name.trim();
+    // 展示名称末尾 1~2 个字，短名放大、长名缩小
+    final short = name.length >= 2 ? name.substring(name.length - 2) : name;
+    final fontSize = short.length <= 1 ? widget.size * 0.3 : widget.size * 0.24;
     return Container(
       width: widget.size,
       height: widget.size,
@@ -98,12 +108,17 @@ class _ChannelLogoState extends State<ChannelLogo> {
         color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(widget.borderRadius),
       ),
-      child: Text(
-        short,
-        style: TextStyle(
-          fontSize: widget.size * 0.26,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurfaceVariant,
+      padding: EdgeInsets.all(widget.size * 0.1),
+      // FittedBox 保证文字始终完整显示，不被截断
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          short,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
