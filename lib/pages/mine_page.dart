@@ -215,11 +215,11 @@ class MinePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('电视直播 v1.0.0', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            const Text('电视直播 v1.0.3', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
-              '直播源来自 fanmingming/live 开源项目（github.com/fanmingming/live），'
-              '频道与 EPG 数据均为互联网公开资源，仅供个人测试学习使用。',
+              '直播源来自 best-fan/iptv-sources 开源项目（github.com/best-fan/iptv-sources），'
+              '每日自动检测有效性，频道与 EPG 数据均为互联网公开资源，仅供个人测试学习使用。',
               style: const TextStyle(fontSize: 12, color: Colors.white54, height: 1.5),
             ),
           ],

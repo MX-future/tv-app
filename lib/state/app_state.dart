@@ -58,8 +58,10 @@ class AppState extends ChangeNotifier {
     for (final c in loaded) {
       final key = c.normalizedKey;
       final list = _channelUrlPool.putIfAbsent(key, () => []);
-      list.removeWhere((u) => u == c.url);
-      list.insert(0, c.url);
+      for (final u in [c.url, ...c.altUrls]) {
+        list.removeWhere((x) => x == u);
+        list.insert(0, u);
+      }
       if (list.length > 8) list.removeRange(8, list.length);
     }
     for (var i = 0; i < channels.length; i++) {
@@ -166,7 +168,8 @@ class AppState extends ChangeNotifier {
         if (parsed.channels.isEmpty) {
           throw Exception('播放列表为空，请检查源地址');
         }
-        channels = parsed.channels;
+        // 同源多地址合并（一个频道保留一个条目，其余作为备用）
+        channels = PlaylistParser.mergeDuplicateChannels(parsed.channels);
         activeSource = source;
         epgUrl = parsed.epgUrl;
         _mergeChannelPool(channels);

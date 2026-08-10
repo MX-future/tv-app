@@ -105,12 +105,46 @@ class PlaylistParser {
 
     return Channel(
       name: name,
-      group: (group == null || group.trim().isEmpty) ? '未分组' : group.trim(),
+      group: _normalizeGroup(group),
       url: url,
       tvgName: tvgName,
       logo: logo,
       sourceName: sourceName,
     );
+  }
+
+  /// 归一化分组名（不同源对同类分组的叫法略有差异）。
+  static String _normalizeGroup(String? group) {
+    if (group == null || group.trim().isEmpty) return '未分组';
+    switch (group.trim()) {
+      case '央视台':
+        return '央视频道';
+      case '卫视台':
+        return '卫视频道';
+      case '数字频道':
+        return '其他频道';
+      default:
+        return group.trim();
+    }
+  }
+
+  /// 同源去重合并：同一频道（按 tvg-name 归一化）的多个地址合并为一个条目，
+  /// 后续地址进入 [Channel.altUrls]，供播放失败自动切换。
+  static List<Channel> mergeDuplicateChannels(List<Channel> list) {
+    if (list.length < 2) return list;
+    final byKey = <String, Channel>{};
+    final order = <String>[];
+    for (final c in list) {
+      final key = c.normalizedKey;
+      final existing = byKey[key];
+      if (existing != null) {
+        byKey[key] = existing.withAltUrls([...existing.altUrls, c.url]);
+      } else {
+        byKey[key] = c;
+        order.add(key);
+      }
+    }
+    return [for (final k in order) byKey[k]!];
   }
 
   static String? _attr(String line, String key) {
