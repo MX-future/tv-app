@@ -28,7 +28,11 @@ class FavoritesPage extends StatelessWidget {
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
                 itemCount: favorites.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => Divider(
+                  height: 1,
+                  indent: 70,
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
                 itemBuilder: (context, i) {
                   final channel = favorites[i];
                   return _FavoriteTile(
@@ -59,16 +63,16 @@ class _EmptyFavorites extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_border, size: 56, color: Color(0xFF5A6472)),
+          Icon(Icons.star_border, size: 56, color: Color(0xFF48484A)),
           SizedBox(height: 12),
           Text(
             '还没有收藏的频道',
-            style: TextStyle(fontSize: 14, color: Color(0xFF8E98A6)),
+            style: TextStyle(fontSize: 14, color: Color(0xFF98989D)),
           ),
           SizedBox(height: 4),
           Text(
             '播放频道时点击右上角星标即可收藏',
-            style: TextStyle(fontSize: 12, color: Color(0xFF5A6472)),
+            style: TextStyle(fontSize: 12, color: Color(0xFF48484A)),
           ),
         ],
       ),
@@ -89,42 +93,41 @@ class _FavoriteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          width: 46,
-          height: 46,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: const Color(0xFF242A33),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ChannelLogo(
-            logoUrl: channel.logo,
-            name: channel.name,
-            size: 34,
-          ),
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      leading: Container(
+        width: 46,
+        height: 46,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF151517),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
-        title: Text(
-          channel.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 14.5,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFFF2F5F9),
-          ),
+        child: ChannelLogo(
+          logoUrl: channel.logo,
+          name: channel.name,
+          size: 34,
         ),
-        subtitle: Text(
-          channel.group,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF8E98A6)),
+      ),
+      title: Text(
+        channel.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFFFFFFFF),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFF5A6472)),
-          onPressed: onRemove,
-        ),
+      ),
+      subtitle: Text(
+        channel.group,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF98989D)),
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFF48484A)),
+        onPressed: onRemove,
       ),
     );
   }

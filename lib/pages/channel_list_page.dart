@@ -17,8 +17,10 @@ class ChannelListPage extends StatefulWidget {
 class _ChannelListPageState extends State<ChannelListPage> {
   String _query = '';
 
-  static const _textPrimary = Color(0xFFF2F5F9);
-  static const _textSecondary = Color(0xFF8E98A6);
+  static const _textPrimary = Color(0xFFFFFFFF);
+  static const _textSecondary = Color(0xFF98989D);
+  static const _textTertiary = Color(0xFF48484A);
+  static const _primary = Color(0xFFFA2D48);
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +53,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
             if (state.loading)
               const LinearProgressIndicator(
                 minHeight: 2,
-                color: Color(0xFFE53935),
+                color: _primary,
                 backgroundColor: Colors.transparent,
               ),
             _buildSearchBar(),
@@ -117,7 +119,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
   Widget _buildBody(AppState state) {
     if (state.loading && state.channels.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFE53935)),
+        child: CircularProgressIndicator(color: _primary),
       );
     }
     if (state.loadError != null && state.channels.isEmpty) {
@@ -156,7 +158,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: Color(0xFF5A6472)),
+            const Icon(Icons.cloud_off, size: 48, color: Color(0xFF48484A)),
             const SizedBox(height: 12),
             const Text(
               '频道加载失败',
@@ -194,11 +196,10 @@ class _ChannelListPageState extends State<ChannelListPage> {
             const SizedBox(height: 6),
             const Text(
               '请检查网络连接，或点击上方直播源切换其它源',
-              style: TextStyle(fontSize: 11.5, color: Color(0xFF5A6472)),
+              style: TextStyle(fontSize: 11.5, color: Color(0xFF48484A)),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
               onPressed: () {
                 final s = state.activeSource ?? state.sources.firstOrNull;
                 if (s != null) state.loadChannels(s);
@@ -247,21 +248,13 @@ class _ChannelListPageState extends State<ChannelListPage> {
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                 child: Row(
                   children: [
-                    Container(
-                      width: 3,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE53935),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
                       group,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _textSecondary,
+                        letterSpacing: 0.2,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -269,7 +262,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
                       '${state.channelsOf(group).length}',
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF5A6472),
+                        color: _textTertiary,
                       ),
                     ),
                   ],
@@ -315,7 +308,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
   }
 }
 
-/// 单个频道格子（深色卡片 + 深灰台标托盘）。
+/// 单个频道格子（Apple Music 风格：扁平 + 圆角台标封面）。
 class _ChannelTile extends StatelessWidget {
   const _ChannelTile({required this.channel, required this.onTap});
 
@@ -324,46 +317,43 @@ class _ChannelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF1A1E25),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 深灰托盘：所有台标都有清晰轮廓
-            Container(
-              width: 56,
-              height: 56,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: const Color(0xFF242A33),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ChannelLogo(
-                logoUrl: channel.logo,
-                name: channel.name,
-                size: 42,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 圆角台标"封面"：近乎黑的深底 + 细描边，任何台标都有清晰轮廓
+          Container(
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFF151517),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: ChannelLogo(
+              logoUrl: channel.logo,
+              name: channel.name,
+              size: 42,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              channel.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFFE8E8ED),
               ),
             ),
-            const SizedBox(height: 7),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                channel.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: Color(0xFFD6DCE4),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

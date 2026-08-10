@@ -56,23 +56,30 @@ class _TvAppState extends State<TvApp> {
     );
   }
 
-  /// 深炭黑主题：带蓝调的深色层次 + 品牌红点缀 + 深色毛玻璃。
+  /// Apple Music 风格深色主题：近纯黑背景 + 亮红点缀 + 扁平层次。
   ThemeData _buildTheme() {
-    const bg = Color(0xFF0F1216);
-    const surface = Color(0xFF1A1E25);
-    const primary = Color(0xFFE53935);
+    const bg = Color(0xFF0A0A0C);
+    const surface = Color(0xFF1C1C1E);
+    const elevated = Color(0xFF2C2C2E);
+    const primary = Color(0xFFFA2D48); // Apple Music 红
+    const textMain = Color(0xFFFFFFFF);
+    const textSub = Color(0xFF98989D);
 
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: Brightness.dark,
       surface: surface,
       primary: primary,
+      onPrimary: Colors.white,
+      onSurface: textMain,
+      onSurfaceVariant: textSub,
+      outline: const Color(0xFF48484A),
     );
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
 
     return base.copyWith(
       scaffoldBackgroundColor: bg,
-      // ---------- AppBar：透明底，由 flexibleSpace 玻璃层提供视觉 ----------
+      // ---------- AppBar：透明，由 flexibleSpace 玻璃层提供视觉 ----------
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -80,121 +87,138 @@ class _TvAppState extends State<TvApp> {
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
         titleTextStyle: const TextStyle(
-          color: Color(0xFFF2F5F9),
-          fontSize: 18,
+          color: textMain,
+          fontSize: 19,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
+          letterSpacing: -0.2,
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFF2F5F9)),
+        iconTheme: const IconThemeData(color: textMain),
       ),
-      // ---------- 底部导航：透明底，由外层 GlassBox 提供视觉 ----------
+      // ---------- 底部导航：透明，由外层 GlassBox 提供视觉 ----------
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.transparent,
         indicatorColor: primary.withValues(alpha: 0.2),
         elevation: 0,
-        height: 66,
-        labelTextStyle: WidgetStatePropertyAll(
-          const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+        height: 62,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected) ? primary : textSub,
+            size: 24,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 10.5,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w600
+                : FontWeight.w400,
+            color: states.contains(WidgetState.selected) ? textMain : textSub,
+          ),
         ),
       ),
-      // ---------- 卡片：深灰 + 1px 细描边（替代阴影，更精致） ----------
+      // ---------- 卡片：扁平深灰（Apple Music 分组列表感） ----------
       cardTheme: CardThemeData(
         color: surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
-      // ---------- 弹窗：深色玻璃大圆角 ----------
+      // ---------- 弹窗：深灰大圆角 ----------
       dialogTheme: DialogThemeData(
-        backgroundColor: const Color(0xFF20242D),
+        backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 10,
         shadowColor: Colors.black.withValues(alpha: 0.5),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(20),
         ),
         titleTextStyle: const TextStyle(
-          color: Color(0xFFF2F5F9),
+          color: textMain,
           fontSize: 17,
           fontWeight: FontWeight.w700,
         ),
         contentTextStyle: const TextStyle(
-          color: Color(0xFFB6BEC9),
+          color: textSub,
           fontSize: 14,
           height: 1.55,
         ),
       ),
-      // ---------- 输入框 ----------
+      // ---------- 输入框：胶囊形 ----------
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1A1E25),
+        fillColor: surface,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(22),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(22),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: primary, width: 1.4),
+          borderRadius: BorderRadius.circular(22),
+          borderSide: const BorderSide(color: primary, width: 1.2),
         ),
-        hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+        hintStyle: const TextStyle(color: Color(0xFF6E6E73)),
       ),
       // ---------- 列表 ----------
       listTileTheme: const ListTileThemeData(
-        iconColor: Color(0xFF8E98A6),
-        textColor: Color(0xFFF2F5F9),
+        iconColor: textSub,
+        textColor: textMain,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF2A2F39),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: elevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       dividerTheme: DividerThemeData(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white.withValues(alpha: 0.08),
         space: 1,
       ),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: const Color(0xFF1A1E25),
+        backgroundColor: surface,
         selectedColor: primary.withValues(alpha: 0.22),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-        labelStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFD6DCE4)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        side: BorderSide.none,
+        labelStyle: const TextStyle(fontSize: 12.5, color: textSub),
         secondaryLabelStyle: const TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
-          color: Color(0xFFFF6B66),
+          color: primary,
         ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: primary),
       ),
     );
   }
 }
 
-/// 毛玻璃 AppBar 背景：整体深色玻璃，状态栏安全区用高不透明白保证图标清晰。
+/// 毛玻璃 AppBar 背景（Apple Music 风格：近纯黑玻璃 + 状态栏安全区）。
 class GlassAppBarBackdrop extends StatelessWidget {
   const GlassAppBarBackdrop({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GlassBox(
-      sigma: 22,
-      color: const Color(0xFF171B22),
-      alpha: 0.62,
+      sigma: 24,
+      color: const Color(0xFF0A0A0C),
+      alpha: 0.5,
       child: Column(
         children: [
-          // 状态栏安全区：较实，避免毛玻璃透出内容干扰状态栏图标
           Container(
             height: MediaQuery.paddingOf(context).top,
-            color: const Color(0xFF0F1216).withValues(alpha: 0.95),
+            color: const Color(0xFF0A0A0C).withValues(alpha: 0.96),
           ),
           const Expanded(child: SizedBox.expand()),
         ],
@@ -207,9 +231,9 @@ class GlassAppBarBackdrop extends StatelessWidget {
 class GlassBox extends StatelessWidget {
   const GlassBox({
     super.key,
-    this.sigma = 22,
-    this.color = const Color(0xFF171B22),
-    this.alpha = 0.62,
+    this.sigma = 24,
+    this.color = const Color(0xFF0A0A0C),
+    this.alpha = 0.5,
     this.borderRadius,
     this.border,
     this.child,
