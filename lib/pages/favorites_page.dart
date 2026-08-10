@@ -19,12 +19,7 @@ class FavoritesPage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('我的收藏'),
-        flexibleSpace: GlassBox(
-          sigma: 18,
-          color: Colors.white,
-          alpha: 0.55,
-          child: const SizedBox.expand(),
-        ),
+        flexibleSpace: const GlassAppBarBackdrop(),
       ),
       body: Padding(
         padding: EdgeInsets.only(top: topPad),
@@ -100,7 +95,20 @@ class _FavoriteTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         onTap: onTap,
-        leading: ChannelLogo(logoUrl: channel.logo, name: channel.name, size: 40),
+        leading: Container(
+          width: 46,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEAF1F9),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ChannelLogo(
+            logoUrl: channel.logo,
+            name: channel.name,
+            size: 34,
+          ),
+        ),
         title: Text(
           channel.name,
           maxLines: 1,

@@ -16,12 +16,7 @@ class MinePage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('我的'),
-        flexibleSpace: GlassBox(
-          sigma: 18,
-          color: Colors.white,
-          alpha: 0.55,
-          child: const SizedBox.expand(),
-        ),
+        flexibleSpace: const GlassAppBarBackdrop(),
       ),
       body: Padding(
         padding: EdgeInsets.only(top: topPad),

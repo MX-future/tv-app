@@ -38,12 +38,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
           ),
         ],
         // 毛玻璃层
-        flexibleSpace: GlassBox(
-          sigma: 18,
-          color: Colors.white,
-          alpha: 0.55,
-          child: const SizedBox.expand(),
-        ),
+        flexibleSpace: const GlassAppBarBackdrop(),
       ),
       body: Padding(
         padding: EdgeInsets.only(top: topPad),
@@ -325,7 +320,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
   }
 }
 
-/// 单个频道格子（清爽白色卡片）。
+/// 单个频道格子（清爽白色卡片 + 浅蓝灰台标托盘）。
 class _ChannelTile extends StatelessWidget {
   const _ChannelTile({required this.channel, required this.onTap});
 
@@ -344,7 +339,21 @@ class _ChannelTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ChannelLogo(logoUrl: channel.logo, name: channel.name, size: 46),
+            // 浅蓝灰托盘：让浅色/白底台标也有清晰轮廓
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF1F9),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: ChannelLogo(
+                logoUrl: channel.logo,
+                name: channel.name,
+                size: 42,
+              ),
+            ),
             const SizedBox(height: 7),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),

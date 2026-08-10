@@ -30,11 +30,11 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       bottomNavigationBar: GlassBox(
-        sigma: 20,
-        color: Colors.white,
-        alpha: 0.6,
+        sigma: 22,
+        color: const Color(0xFFF2F7FF),
+        alpha: 0.55,
         border: Border(
-          top: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+          top: BorderSide(color: Colors.black.withValues(alpha: 0.04)),
         ),
         child: NavigationBar(
           selectedIndex: _tab,

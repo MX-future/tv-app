@@ -61,12 +61,13 @@ class _TvAppState extends State<TvApp> {
     final scheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFFE53935),
       brightness: Brightness.light,
-      surface: const Color(0xFFF6F7F9),
+      surface: const Color(0xFFF2F6FC),
     );
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
 
     return base.copyWith(
-      scaffoldBackgroundColor: const Color(0xFFF3F4F6),
+      // 浅蓝白基调
+      scaffoldBackgroundColor: const Color(0xFFEDF2F9),
       // ---------- AppBar：毛玻璃（透明底，由 flexibleSpace 玻璃层提供视觉） ----------
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -156,6 +157,30 @@ class _TvAppState extends State<TvApp> {
         selectedColor: scheme.primary.withValues(alpha: 0.14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+    );
+  }
+}
+
+/// 毛玻璃 AppBar 背景：整体淡蓝玻璃，状态栏安全区用高不透明白保证图标清晰。
+class GlassAppBarBackdrop extends StatelessWidget {
+  const GlassAppBarBackdrop({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassBox(
+      sigma: 22,
+      color: const Color(0xFFF2F7FF),
+      alpha: 0.5,
+      child: Column(
+        children: [
+          // 状态栏安全区：较实，避免毛玻璃透出内容干扰状态栏图标
+          Container(
+            height: MediaQuery.paddingOf(context).top,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+          const Expanded(child: SizedBox.expand()),
+        ],
       ),
     );
   }
