@@ -190,6 +190,14 @@ class MinePage extends StatelessWidget {
             onChanged: state.setKeepScreenOn,
           ),
           const Divider(height: 1),
+          SwitchListTile(
+            secondary: const Icon(Icons.wifi_outlined, size: 20),
+            title: const Text('仅 WiFi 下播放', style: TextStyle(fontSize: 14)),
+            subtitle: const Text('使用移动数据播放时弹窗确认，防止流量消耗', style: TextStyle(fontSize: 11.5, color: Colors.white38)),
+            value: state.wifiOnly,
+            onChanged: state.setWifiOnly,
+          ),
+          const Divider(height: 1),
           ListTile(
             dense: true,
             leading: const Icon(Icons.favorite_border, size: 20),

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -41,6 +42,9 @@ class _PlayerPageState extends State<PlayerPage> {
   int _candidateIndex = 0;
   String? _altNote; // "备用源 2/3…"
   Timer? _errorDebounce;
+
+  /// 本次播放会话内是否已确认"移动数据继续播放"
+  bool _trafficConfirmed = false;
 
   @override
   void initState() {
@@ -101,8 +105,22 @@ class _PlayerPageState extends State<PlayerPage> {
   }
 
   /// 打开指定索引的频道（构建候选地址列表）。
-  void _openChannel(int index, {bool first = false}) async {
+  Future<void> _openChannel(int index, {bool first = false}) async {
     if (index < 0 || index >= widget.channels.length) return;
+    final state = AppScope.of(context);
+
+    // 流量提醒：开启"仅 WiFi 下播放"且当前为移动网络时，首次需确认
+    if (!_trafficConfirmed && state.wifiOnly) {
+      final isMobile = await _isMobileNetwork();
+      if (!mounted) return;
+      if (isMobile) {
+        final ok = await _showTrafficConfirm();
+        if (!mounted || ok != true) return; // 取消：不切换频道
+        _trafficConfirmed = true;
+      }
+    }
+    if (!mounted) return;
+
     final channel = widget.channels[index];
     setState(() {
       _index = index;
@@ -110,7 +128,6 @@ class _PlayerPageState extends State<PlayerPage> {
       _error = null;
       _altNote = null;
     });
-    final state = AppScope.of(context);
     _candidates = state.candidateUrls(channel);
     _candidateIndex = 0;
     await _openUrl(_candidates.first);
@@ -118,6 +135,46 @@ class _PlayerPageState extends State<PlayerPage> {
     await state.addRecent(channel);
     if (state.keepScreenOn) await WakelockPlus.enable();
     _loadEpg(channel);
+  }
+
+  /// 检测当前是否为移动数据网络（检测失败时不拦截）。
+  Future<bool> _isMobileNetwork() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r == ConnectivityResult.mobile);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool?> _showTrafficConfirm() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.wifi_off, size: 22, color: Colors.orangeAccent),
+            SizedBox(width: 10),
+            Text('当前为移动数据', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        content: const Text(
+          '当前使用移动数据流量播放直播，会消耗手机流量。\n是否继续播放？',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('继续播放'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openUrl(String url) async {

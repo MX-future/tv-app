@@ -40,6 +40,7 @@ dependencies:
   shared_preferences: ^2.5.5
   http: ^1.6.0
   wakelock_plus: ^1.7.0
+  connectivity_plus: ^6.1.0
 
 dev_dependencies:
   flutter_test:

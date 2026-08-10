@@ -91,6 +91,9 @@ class AppState extends ChangeNotifier {
 
   bool keepScreenOn = true;
 
+  /// 仅 WiFi 下播放（移动数据时弹窗提醒）
+  bool wifiOnly = false;
+
   // ---------- 初始化 ----------
 
   Future<void> init() async {
@@ -99,6 +102,7 @@ class AppState extends ChangeNotifier {
     _favorites.addAll(_store.favorites);
     recent = _store.recent;
     keepScreenOn = _store.keepScreenOn;
+    wifiOnly = _store.wifiOnly;
     // 立即刷新 UI：源条立即可见，不依赖网络请求完成
     notifyListeners();
 
@@ -324,6 +328,12 @@ class AppState extends ChangeNotifier {
   Future<void> setKeepScreenOn(bool value) async {
     keepScreenOn = value;
     await _store.setKeepScreenOn(value);
+    notifyListeners();
+  }
+
+  Future<void> setWifiOnly(bool value) async {
+    wifiOnly = value;
+    await _store.setWifiOnly(value);
     notifyListeners();
   }
 

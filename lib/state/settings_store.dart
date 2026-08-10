@@ -16,6 +16,7 @@ class SettingsStore {
   static const _kRecent = 'recent';
   static const _kLastSourceId = 'last_source_id';
   static const _kKeepScreenOn = 'keep_screen_on';
+  static const _kWifiOnly = 'wifi_only';
 
   static Future<SettingsStore> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -74,5 +75,12 @@ class SettingsStore {
 
   Future<void> setKeepScreenOn(bool value) async {
     await _prefs.setBool(_kKeepScreenOn, value);
+  }
+
+  /// 仅 WiFi 下播放（移动数据时弹窗提醒）
+  bool get wifiOnly => _prefs.getBool(_kWifiOnly) ?? false;
+
+  Future<void> setWifiOnly(bool value) async {
+    await _prefs.setBool(_kWifiOnly, value);
   }
 }
