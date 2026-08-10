@@ -50,6 +50,41 @@ class AppState extends ChangeNotifier {
   final Map<String, List<EpgProgram>> _epgCache = {};
   bool epgLoading = false;
 
+  /// 跨源频道播放地址池：normalizedKey -> 候选 URL 列表（新源优先）
+  final Map<String, List<String>> _channelUrlPool = {};
+
+  /// 收集当前源频道到播放地址池，并回填 altUrls。
+  void _mergeChannelPool(List<Channel> loaded) {
+    for (final c in loaded) {
+      final key = c.normalizedKey;
+      final list = _channelUrlPool.putIfAbsent(key, () => []);
+      list.removeWhere((u) => u == c.url);
+      list.insert(0, c.url);
+      if (list.length > 8) list.removeRange(8, list.length);
+    }
+    for (var i = 0; i < channels.length; i++) {
+      final c = channels[i];
+      final pool = _channelUrlPool[c.normalizedKey] ?? const [];
+      final alts = pool.where((u) => u != c.url).take(4).toList();
+      if (alts.isNotEmpty && !listEquals(alts, c.altUrls)) {
+        channels[i] = c.withAltUrls(alts);
+      }
+    }
+  }
+
+  /// 获取频道的全部候选播放地址（主地址 + 备用 + 池内历史）。
+  List<String> candidateUrls(Channel channel) {
+    final result = <String>[];
+    for (final u in [channel.url, ...channel.altUrls]) {
+      if (!result.contains(u)) result.add(u);
+    }
+    final pool = _channelUrlPool[channel.normalizedKey] ?? const [];
+    for (final u in pool) {
+      if (!result.contains(u)) result.add(u);
+    }
+    return result;
+  }
+
   // ---------- 设置 ----------
 
   bool keepScreenOn = true;
@@ -71,6 +106,27 @@ class AppState extends ChangeNotifier {
         sources.where((s) => s.id == lastId).firstOrNull ?? sources.firstOrNull;
     if (target != null) {
       await loadChannels(target);
+      // 后台静默预加载其他内置源，充实跨源候选池
+      unawaited(preloadOtherSources());
+    }
+    notifyListeners();
+  }
+
+  /// 后台静默加载其他内置源，仅合并到候选池（不切换当前频道列表）。
+  Future<void> preloadOtherSources() async {
+    final current = activeSource ?? sources.firstOrNull;
+    if (current == null) return;
+    final others = _fallbackSources(current);
+    for (final s in others.take(2)) {
+      try {
+        final text = await StreamLoader.fetchText(s.candidates.first);
+        final parsed = PlaylistParser.parse(text, sourceName: s.name);
+        if (parsed.channels.isNotEmpty) {
+          _mergeChannelPool(parsed.channels);
+        }
+      } catch (_) {
+        // 静默失败，不影响主流程
+      }
     }
     notifyListeners();
   }
@@ -113,6 +169,7 @@ class AppState extends ChangeNotifier {
         channels = parsed.channels;
         activeSource = source;
         epgUrl = parsed.epgUrl;
+        _mergeChannelPool(channels);
         _rebuildGroups();
         await _store.setLastSourceId(source.id);
         usedUrl = url;

@@ -36,6 +36,12 @@ class _PlayerPageState extends State<PlayerPage> {
   List<EpgProgram> _epg = const [];
   Timer? _overlayTimer;
 
+  // 候选播放地址（主地址 + 跨源备用）
+  List<String> _candidates = [];
+  int _candidateIndex = 0;
+  String? _altNote; // "备用源 2/3…"
+  Timer? _errorDebounce;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +56,7 @@ class _PlayerPageState extends State<PlayerPage> {
   @override
   void dispose() {
     _overlayTimer?.cancel();
+    _errorDebounce?.cancel();
     _player.dispose();
     WakelockPlus.disable();
     _restoreOrientation();
@@ -80,33 +87,76 @@ class _PlayerPageState extends State<PlayerPage> {
     });
     _player.stream.error.listen((e) {
       if (!mounted) return;
-      setState(() {
-        _error = e.isEmpty ? null : e;
-        _buffering = false;
-      });
+      _onPlayError(e.isEmpty ? '播放失败' : e);
     });
     _player.stream.playing.listen((p) {
       if (!mounted) return;
-      if (p) setState(() => _error = null);
+      if (p) {
+        setState(() {
+          _error = null;
+          _altNote = null;
+        });
+      }
     });
   }
 
+  /// 打开指定索引的频道（构建候选地址列表）。
   void _openChannel(int index, {bool first = false}) async {
     if (index < 0 || index >= widget.channels.length) return;
+    final channel = widget.channels[index];
     setState(() {
       _index = index;
       _buffering = true;
       _error = null;
+      _altNote = null;
     });
-    final channel = widget.channels[index];
-    await _player.open(Media(channel.url));
-    if (!mounted) return;
-
     final state = AppScope.of(context);
+    _candidates = state.candidateUrls(channel);
+    _candidateIndex = 0;
+    await _openUrl(_candidates.first);
+
     await state.addRecent(channel);
     if (state.keepScreenOn) await WakelockPlus.enable();
-
     _loadEpg(channel);
+  }
+
+  Future<void> _openUrl(String url) async {
+    await _player.open(Media(url));
+  }
+
+  /// 播放失败：自动尝试下一个候选地址，全部失败才显示错误。
+  void _onPlayError(String raw) {
+    if (_errorDebounce?.isActive ?? false) return;
+    _errorDebounce = Timer(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      if (_candidateIndex < _candidates.length - 1) {
+        _candidateIndex++;
+        setState(() {
+          _buffering = true;
+          _altNote = _candidates.length > 1
+              ? '备用源 ${_candidateIndex + 1}/${_candidates.length}，正在尝试…'
+              : null;
+        });
+        _openUrl(_candidates[_candidateIndex]);
+      } else {
+        setState(() {
+          _buffering = false;
+          _error = _friendlyError(raw, _candidates.last);
+        });
+      }
+    });
+  }
+
+  /// 把底层错误转成用户可读的提示。
+  String _friendlyError(String raw, String url) {
+    final base = raw.trim();
+    if (url.contains('[') || url.contains(']:')) {
+      return '$base\n\n该频道为 IPv6 直播源，当前网络可能不支持 IPv6，请切换其它频道或直播源。';
+    }
+    if (base.contains('HTTP 403') || base.contains('403')) {
+      return '$base\n该源可能已失效或禁止访问。';
+    }
+    return base;
   }
 
   void _retry() {
@@ -237,6 +287,13 @@ class _PlayerPageState extends State<PlayerPage> {
                     '${channel.group} · ${_index + 1}/${widget.channels.length}',
                     style: const TextStyle(fontSize: 12, color: Colors.white60),
                   ),
+                  if (_altNote != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      _altNote!,
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFFFFC107)),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -345,7 +402,7 @@ class _PlayerPageState extends State<PlayerPage> {
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
-              maxLines: 3,
+              maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 11.5, color: Colors.white54),
             ),
