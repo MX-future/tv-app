@@ -46,6 +46,12 @@ class _PlayerPageState extends State<PlayerPage> {
   /// 本次播放会话内是否已确认"移动数据继续播放"
   bool _trafficConfirmed = false;
 
+  /// 当前流是否已成功播放过（用于区分瞬时错误与真实失败）
+  bool _hasPlayed = false;
+
+  /// 已播放状态下收到错误后的观察计时器（等待播放器自动恢复）
+  Timer? _recoverTimer;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +67,7 @@ class _PlayerPageState extends State<PlayerPage> {
   void dispose() {
     _overlayTimer?.cancel();
     _errorDebounce?.cancel();
+    _recoverTimer?.cancel();
     _player.dispose();
     WakelockPlus.disable();
     _restoreOrientation();
@@ -91,17 +98,39 @@ class _PlayerPageState extends State<PlayerPage> {
     });
     _player.stream.error.listen((e) {
       if (!mounted) return;
-      _onPlayError(e.isEmpty ? '播放失败' : e);
+      _onStreamError(e.isEmpty ? '播放失败' : e);
     });
     _player.stream.playing.listen((p) {
       if (!mounted) return;
       if (p) {
+        // 成功播放：清除错误状态与观察计时器
+        _hasPlayed = true;
+        _recoverTimer?.cancel();
+        _recoverTimer = null;
         setState(() {
           _error = null;
           _altNote = null;
+          _buffering = false;
         });
       }
     });
+  }
+
+  /// 统一错误入口：区分瞬时错误（播放中分片失败，可自动恢复）与真实失败。
+  void _onStreamError(String raw) {
+    if (_hasPlayed) {
+      // 已成功播放过：先观察，等待播放器自动恢复；超过时限仍未恢复才判失败
+      _recoverTimer?.cancel();
+      _recoverTimer = Timer(const Duration(seconds: 4), () {
+        _recoverTimer = null;
+        if (!mounted) return;
+        if (_player.state.playing) return; // 已恢复，忽略
+        _onPlayError(raw); // 确实中断，按失败处理
+      });
+      return;
+    }
+    // 尚未播放成功：直接按失败处理（尝试候选/报错）
+    _onPlayError(raw);
   }
 
   /// 打开指定索引的频道（构建候选地址列表）。
@@ -134,6 +163,9 @@ class _PlayerPageState extends State<PlayerPage> {
       _error = null;
       _altNote = null;
     });
+    _hasPlayed = false;
+    _recoverTimer?.cancel();
+    _recoverTimer = null;
     _candidates = state.candidateUrls(channel);
     _candidateIndex = 0;
     await _openUrl(_candidates.first);
@@ -194,6 +226,9 @@ class _PlayerPageState extends State<PlayerPage> {
       if (!mounted) return;
       if (_candidateIndex < _candidates.length - 1) {
         _candidateIndex++;
+        _hasPlayed = false;
+        _recoverTimer?.cancel();
+        _recoverTimer = null;
         setState(() {
           _buffering = true;
           _altNote = _candidates.length > 1
