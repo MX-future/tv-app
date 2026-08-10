@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app.dart';
 import '../models/play_source.dart';
@@ -99,11 +100,34 @@ class MinePage extends StatelessWidget {
           color: selected ? primary : scheme.onSurface,
         ),
       ),
-      subtitle: Text(
-        source.url,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 11, color: scheme.outline),
+      subtitle: Row(
+        children: [
+          Expanded(
+            child: Text(
+              source.url,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFF98989D),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          // 一键复制链接（解决长地址看不全的问题）
+          InkWell(
+            onTap: () => _copyUrl(context, source.url),
+            borderRadius: BorderRadius.circular(6),
+            child: const Padding(
+              padding: EdgeInsets.all(2),
+              child: Icon(
+                Icons.copy_rounded,
+                size: 14,
+                color: Color(0xFF6E6E73),
+              ),
+            ),
+          ),
+        ],
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -128,6 +152,17 @@ class MinePage extends StatelessWidget {
           state.loadChannels(source);
         }
       },
+    );
+  }
+
+  /// 复制直播源链接到剪贴板。
+  void _copyUrl(BuildContext context, String url) {
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已复制链接：$url', maxLines: 1, overflow: TextOverflow.ellipsis),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
