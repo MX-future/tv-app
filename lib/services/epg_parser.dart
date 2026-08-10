@@ -95,12 +95,15 @@ class EpgParser {
     return text.replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>');
   }
 
-  /// 频道名匹配（大小写不敏感、忽略空白；tvg-name 可能与节目单名略有差异，
-  /// 这里也尝试模糊匹配：去掉 "-"、"+" 等符号后比较）。
+  /// 频道名匹配（大小写不敏感、忽略空白与符号；支持包含关系，
+  /// 如 "CCTV-1 综合" 可匹配节目单中的 "CCTV-1"）。
   static bool _sameChannel(String epgChannel, String channel) {
     String norm(String s) => s
         .toLowerCase()
         .replaceAll(RegExp(r'[\s\-+．.]'), '');
-    return norm(epgChannel) == norm(channel);
+    final a = norm(epgChannel);
+    final b = norm(channel);
+    if (a == b) return true;
+    return a.contains(b) || b.contains(a);
   }
 }

@@ -17,6 +17,9 @@ class AppState extends ChangeNotifier {
 
   late SettingsStore _store;
 
+  /// 数据获取函数（默认走网络，测试时可注入假数据）。
+  Future<String> Function(String url) fetchText = StreamLoader.fetchText;
+
   // ---------- 源与频道 ----------
 
   /// 全部可用源（内置 + 自定义）
@@ -125,7 +128,7 @@ class AppState extends ChangeNotifier {
     final others = _fallbackSources(current);
     for (final s in others.take(2)) {
       try {
-        final text = await StreamLoader.fetchText(s.candidates.first);
+        final text = await fetchText(s.candidates.first);
         final parsed = PlaylistParser.parse(text, sourceName: s.name);
         if (parsed.channels.isNotEmpty) {
           _mergeChannelPool(parsed.channels);
@@ -167,7 +170,7 @@ class AppState extends ChangeNotifier {
     String? usedUrl;
     for (final url in ordered) {
       try {
-        final text = await StreamLoader.fetchText(url);
+        final text = await fetchText(url);
         final parsed = PlaylistParser.parse(text, sourceName: source.name);
         if (parsed.channels.isEmpty) {
           throw Exception('播放列表为空，请检查源地址');
@@ -316,7 +319,7 @@ class AppState extends ChangeNotifier {
     epgLoading = true;
     notifyListeners();
     try {
-      final bytes = await StreamLoader.fetchText(url);
+      final bytes = await fetchText(url);
       final map = EpgParser.parse(bytes, channelName: channel.epgKey);
       final list = map.values.expand((e) => e).toList()
         ..sort((a, b) => a.start.compareTo(b.start));
