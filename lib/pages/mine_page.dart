@@ -4,38 +4,57 @@ import '../app.dart';
 import '../models/play_source.dart';
 import '../state/app_state.dart';
 
-/// "我的"页：直播源管理与设置。
+/// "我的"页：直播源管理与设置（清爽浅色风格）。
 class MinePage extends StatelessWidget {
   const MinePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final topPad = MediaQuery.paddingOf(context).top + kToolbarHeight;
     return Scaffold(
-      appBar: AppBar(title: const Text('我的')),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          _sectionTitle('直播源'),
-          const SizedBox(height: 4),
-          _buildSources(context, state),
-          const SizedBox(height: 20),
-          _sectionTitle('设置'),
-          _buildSettings(context, state),
-          const SizedBox(height: 20),
-          _sectionTitle('关于'),
-          _buildAbout(),
-        ],
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text('我的'),
+        flexibleSpace: GlassBox(
+          sigma: 18,
+          color: Colors.white,
+          alpha: 0.55,
+          child: const SizedBox.expand(),
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.only(top: topPad),
+        child: ListView(
+          padding: const EdgeInsets.all(12),
+          children: [
+            _sectionTitle(context, '直播源'),
+            const SizedBox(height: 4),
+            _buildSources(context, state),
+            const SizedBox(height: 20),
+            _sectionTitle(context, '设置'),
+            _buildSettings(context, state),
+            const SizedBox(height: 20),
+            _sectionTitle(context, '关于'),
+            _buildAbout(context),
+            const SizedBox(height: 96),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _sectionTitle(String title) {
+  Widget _sectionTitle(BuildContext context, String title) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white54),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: scheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -47,9 +66,14 @@ class MinePage extends StatelessWidget {
         children: [
           for (final source in state.sources) _sourceTile(context, state, source),
           ListTile(
-            leading: const CircleAvatar(
+            leading: CircleAvatar(
               radius: 16,
-              child: Icon(Icons.add, size: 20),
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              child: Icon(
+                Icons.add,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             title: const Text('添加自定义源', style: TextStyle(fontSize: 14)),
             onTap: () => _showAddSourceDialog(context),
@@ -60,14 +84,15 @@ class MinePage extends StatelessWidget {
   }
 
   Widget _sourceTile(BuildContext context, AppState state, PlaySource source) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
+    final primary = scheme.primary;
     final selected = state.activeSource?.id == source.id;
     return ListTile(
       dense: true,
       leading: Icon(
         source.builtIn ? Icons.cloud_done_outlined : Icons.link,
         size: 20,
-        color: selected ? primary : Colors.white38,
+        color: selected ? primary : scheme.onSurfaceVariant,
       ),
       title: Text(
         source.name,
@@ -76,14 +101,14 @@ class MinePage extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-          color: selected ? primary : null,
+          color: selected ? primary : scheme.onSurface,
         ),
       ),
       subtitle: Text(
         source.url,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 11, color: Colors.white30),
+        style: TextStyle(fontSize: 11, color: scheme.outline),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -96,7 +121,7 @@ class MinePage extends StatelessWidget {
             )
           else if (!source.builtIn)
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 19, color: Colors.white30),
+              icon: Icon(Icons.delete_outline, size: 19, color: scheme.outline),
               onPressed: () => state.removeSource(source),
             )
           else
@@ -133,7 +158,7 @@ class MinePage extends StatelessWidget {
                   hintText: '如：我的源',
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: urlCtrl,
                 keyboardType: TextInputType.url,
@@ -185,7 +210,10 @@ class MinePage extends StatelessWidget {
           SwitchListTile(
             secondary: const Icon(Icons.brightness_high_outlined, size: 20),
             title: const Text('播放时保持屏幕常亮', style: TextStyle(fontSize: 14)),
-            subtitle: const Text('全屏观看直播时不自动息屏', style: TextStyle(fontSize: 11.5, color: Colors.white38)),
+            subtitle: const Text(
+              '全屏观看直播时不自动息屏',
+              style: TextStyle(fontSize: 11.5, color: Colors.black45),
+            ),
             value: state.keepScreenOn,
             onChanged: state.setKeepScreenOn,
           ),
@@ -193,7 +221,10 @@ class MinePage extends StatelessWidget {
           SwitchListTile(
             secondary: const Icon(Icons.wifi_outlined, size: 20),
             title: const Text('仅 WiFi 下播放', style: TextStyle(fontSize: 14)),
-            subtitle: const Text('使用移动数据播放时弹窗确认，防止流量消耗', style: TextStyle(fontSize: 11.5, color: Colors.white38)),
+            subtitle: const Text(
+              '使用移动数据播放时弹窗确认，防止流量消耗',
+              style: TextStyle(fontSize: 11.5, color: Colors.black45),
+            ),
             value: state.wifiOnly,
             onChanged: state.setWifiOnly,
           ),
@@ -216,19 +247,23 @@ class MinePage extends StatelessWidget {
     );
   }
 
-  Widget _buildAbout() {
+  Widget _buildAbout(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('电视直播 v1.0.3', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            const Text(
+              '电视直播 v1.0.8',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 8),
             Text(
               '直播源来自 best-fan/iptv-sources 开源项目（github.com/best-fan/iptv-sources），'
               '每日自动检测有效性，频道与 EPG 数据均为互联网公开资源，仅供个人测试学习使用。',
-              style: const TextStyle(fontSize: 12, color: Colors.white54, height: 1.5),
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant, height: 1.5),
             ),
           ],
         ),

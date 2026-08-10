@@ -5,7 +5,7 @@ import '../models/channel.dart';
 import '../widgets/channel_logo.dart';
 import 'player_page.dart';
 
-/// 收藏频道页。
+/// 收藏频道页（清爽浅色风格）。
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
 
@@ -13,31 +13,44 @@ class FavoritesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
     final favorites = state.channels.where((c) => state.isFavorite(c)).toList();
+    final topPad = MediaQuery.paddingOf(context).top + kToolbarHeight;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('我的收藏')),
-      body: favorites.isEmpty
-          ? const _EmptyFavorites()
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: favorites.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final channel = favorites[i];
-                return _FavoriteTile(
-                  channel: channel,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => PlayerPage(
-                        channels: favorites,
-                        initialIndex: i,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text('我的收藏'),
+        flexibleSpace: GlassBox(
+          sigma: 18,
+          color: Colors.white,
+          alpha: 0.55,
+          child: const SizedBox.expand(),
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.only(top: topPad),
+        child: favorites.isEmpty
+            ? const _EmptyFavorites()
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+                itemCount: favorites.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, i) {
+                  final channel = favorites[i];
+                  return _FavoriteTile(
+                    channel: channel,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PlayerPage(
+                          channels: favorites,
+                          initialIndex: i,
+                        ),
                       ),
                     ),
-                  ),
-                  onRemove: () => state.toggleFavorite(channel),
-                );
-              },
-            ),
+                    onRemove: () => state.toggleFavorite(channel),
+                  );
+                },
+              ),
+      ),
     );
   }
 }
@@ -47,20 +60,21 @@ class _EmptyFavorites extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_border, size: 56, color: Colors.white24),
+          Icon(Icons.star_border, size: 56, color: scheme.outline),
           const SizedBox(height: 12),
           Text(
             '还没有收藏的频道',
-            style: TextStyle(fontSize: 14, color: Colors.white54),
+            style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
             '播放频道时点击右上角星标即可收藏',
-            style: TextStyle(fontSize: 12, color: Colors.white38),
+            style: TextStyle(fontSize: 12, color: scheme.outline),
           ),
         ],
       ),
@@ -81,6 +95,7 @@ class _FavoriteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ListTile(
@@ -90,14 +105,14 @@ class _FavoriteTile extends StatelessWidget {
           channel.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 14.5),
+          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           channel.group,
-          style: const TextStyle(fontSize: 12, color: Colors.white38),
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white38),
+          icon: Icon(Icons.delete_outline, size: 20, color: scheme.outline),
           onPressed: onRemove,
         ),
       ),
