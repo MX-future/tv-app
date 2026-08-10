@@ -6,7 +6,7 @@ import '../state/app_state.dart';
 import '../widgets/channel_logo.dart';
 import 'player_page.dart';
 
-/// 直播频道列表页（清爽浅色风格）。
+/// 直播频道列表页（深炭黑 + 毛玻璃风格）。
 class ChannelListPage extends StatefulWidget {
   const ChannelListPage({super.key});
 
@@ -16,6 +16,9 @@ class ChannelListPage extends StatefulWidget {
 
 class _ChannelListPageState extends State<ChannelListPage> {
   String _query = '';
+
+  static const _textPrimary = Color(0xFFF2F5F9);
+  static const _textSecondary = Color(0xFF8E98A6);
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +40,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
                   },
           ),
         ],
-        // 毛玻璃层
+        // 深色毛玻璃层
         flexibleSpace: const GlassAppBarBackdrop(),
       ),
       body: Padding(
@@ -45,7 +48,12 @@ class _ChannelListPageState extends State<ChannelListPage> {
         child: Column(
           children: [
             _buildSourceBar(state),
-            if (state.loading) const LinearProgressIndicator(minHeight: 2),
+            if (state.loading)
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFFE53935),
+                backgroundColor: Colors.transparent,
+              ),
             _buildSearchBar(),
             Expanded(child: _buildBody(state)),
           ],
@@ -76,11 +84,6 @@ class _ChannelListPageState extends State<ChannelListPage> {
                 state.loadChannels(source);
               }
             },
-            labelStyle: TextStyle(
-              fontSize: 12.5,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? Theme.of(context).colorScheme.primary : null,
-            ),
           );
         },
       ),
@@ -94,18 +97,14 @@ class _ChannelListPageState extends State<ChannelListPage> {
       padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
       child: TextField(
         onChanged: (v) => setState(() => _query = v),
-        style: const TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 14, color: _textPrimary),
         decoration: InputDecoration(
           hintText: '搜索频道，如：CCTV、卫视…',
-          hintStyle: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-          prefixIcon: const Icon(Icons.search, size: 20),
+          prefixIcon: const Icon(Icons.search, size: 20, color: _textSecondary),
           suffixIcon: _query.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: const Icon(Icons.clear, size: 18, color: _textSecondary),
                   onPressed: () => setState(() => _query = ''),
                 ),
         ),
@@ -117,19 +116,18 @@ class _ChannelListPageState extends State<ChannelListPage> {
 
   Widget _buildBody(AppState state) {
     if (state.loading && state.channels.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFE53935)),
+      );
     }
     if (state.loadError != null && state.channels.isEmpty) {
       return _buildError(state.loadError!);
     }
     if (state.channels.isEmpty) {
-      return Center(
+      return const Center(
         child: Text(
           '暂无频道，请选择上方直播源',
-          style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          style: TextStyle(fontSize: 14, color: _textSecondary),
         ),
       );
     }
@@ -138,13 +136,10 @@ class _ChannelListPageState extends State<ChannelListPage> {
     if (query.isNotEmpty) {
       final results = AppState.search(state.channels, query);
       if (results.isEmpty) {
-        return Center(
+        return const Center(
           child: Text(
             '没有找到匹配的频道',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 14, color: _textSecondary),
           ),
         );
       }
@@ -155,36 +150,35 @@ class _ChannelListPageState extends State<ChannelListPage> {
 
   Widget _buildError(String message) {
     final state = AppScope.of(context);
-    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, size: 48, color: scheme.outline),
+            const Icon(Icons.cloud_off, size: 48, color: Color(0xFF5A6472)),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               '频道加载失败',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _textPrimary),
             ),
             if (state.fallbackNote != null) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFDF3E3),
+                  color: const Color(0xFF3A2E14),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.autorenew, size: 15, color: Color(0xFFB26A00)),
+                    const Icon(Icons.autorenew, size: 15, color: Color(0xFFFFC107)),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         state.fallbackNote!,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF9A6A00)),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFFFFD54F)),
                       ),
                     ),
                   ],
@@ -195,15 +189,16 @@ class _ChannelListPageState extends State<ChannelListPage> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+              style: const TextStyle(fontSize: 12.5, color: _textSecondary),
             ),
             const SizedBox(height: 6),
-            Text(
+            const Text(
               '请检查网络连接，或点击上方直播源切换其它源',
-              style: TextStyle(fontSize: 11.5, color: scheme.outline),
+              style: TextStyle(fontSize: 11.5, color: Color(0xFF5A6472)),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
               onPressed: () {
                 final s = state.activeSource ?? state.sources.firstOrNull;
                 if (s != null) state.loadChannels(s);
@@ -238,7 +233,6 @@ class _ChannelListPageState extends State<ChannelListPage> {
   }
 
   Widget _buildGroupedList(AppState state) {
-    final scheme = Theme.of(context).colorScheme;
     return RefreshIndicator(
       onRefresh: () async {
         final s = state.activeSource;
@@ -257,7 +251,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
                       width: 3,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: scheme.primary,
+                        color: const Color(0xFFE53935),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -267,14 +261,15 @@ class _ChannelListPageState extends State<ChannelListPage> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
+                        color: _textPrimary,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '${state.channelsOf(group).length}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
-                        color: scheme.outline,
+                        color: Color(0xFF5A6472),
                       ),
                     ),
                   ],
@@ -320,7 +315,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
   }
 }
 
-/// 单个频道格子（清爽白色卡片 + 浅蓝灰台标托盘）。
+/// 单个频道格子（深色卡片 + 深灰台标托盘）。
 class _ChannelTile extends StatelessWidget {
   const _ChannelTile({required this.channel, required this.onTap});
 
@@ -329,9 +324,8 @@ class _ChannelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: Colors.white,
+      color: const Color(0xFF1A1E25),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -339,13 +333,13 @@ class _ChannelTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 浅蓝灰托盘：让浅色/白底台标也有清晰轮廓
+            // 深灰托盘：所有台标都有清晰轮廓
             Container(
               width: 56,
               height: 56,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF1F9),
+                color: const Color(0xFF242A33),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ChannelLogo(
@@ -362,9 +356,9 @@ class _ChannelTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 11.5,
-                  color: scheme.onSurface,
+                  color: Color(0xFFD6DCE4),
                 ),
               ),
             ),

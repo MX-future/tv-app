@@ -207,7 +207,7 @@ class MinePage extends StatelessWidget {
             title: const Text('播放时保持屏幕常亮', style: TextStyle(fontSize: 14)),
             subtitle: const Text(
               '全屏观看直播时不自动息屏',
-              style: TextStyle(fontSize: 11.5, color: Colors.black45),
+              style: TextStyle(fontSize: 11.5, color: Color(0xFF8E98A6)),
             ),
             value: state.keepScreenOn,
             onChanged: state.setKeepScreenOn,
@@ -218,7 +218,7 @@ class MinePage extends StatelessWidget {
             title: const Text('仅 WiFi 下播放', style: TextStyle(fontSize: 14)),
             subtitle: const Text(
               '使用移动数据播放时弹窗确认，防止流量消耗',
-              style: TextStyle(fontSize: 11.5, color: Colors.black45),
+              style: TextStyle(fontSize: 11.5, color: Color(0xFF8E98A6)),
             ),
             value: state.wifiOnly,
             onChanged: state.setWifiOnly,

@@ -5,7 +5,7 @@ import '../models/channel.dart';
 import '../widgets/channel_logo.dart';
 import 'player_page.dart';
 
-/// 收藏频道页（清爽浅色风格）。
+/// 收藏频道页（深炭黑 + 毛玻璃风格）。
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
 
@@ -55,21 +55,20 @@ class _EmptyFavorites extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
+    return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_border, size: 56, color: scheme.outline),
-          const SizedBox(height: 12),
+          Icon(Icons.star_border, size: 56, color: Color(0xFF5A6472)),
+          SizedBox(height: 12),
           Text(
             '还没有收藏的频道',
-            style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+            style: TextStyle(fontSize: 14, color: Color(0xFF8E98A6)),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             '播放频道时点击右上角星标即可收藏',
-            style: TextStyle(fontSize: 12, color: scheme.outline),
+            style: TextStyle(fontSize: 12, color: Color(0xFF5A6472)),
           ),
         ],
       ),
@@ -90,7 +89,6 @@ class _FavoriteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ListTile(
@@ -100,7 +98,7 @@ class _FavoriteTile extends StatelessWidget {
           height: 46,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color(0xFFEAF1F9),
+            color: const Color(0xFF242A33),
             borderRadius: BorderRadius.circular(12),
           ),
           child: ChannelLogo(
@@ -113,14 +111,18 @@ class _FavoriteTile extends StatelessWidget {
           channel.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFF2F5F9),
+          ),
         ),
         subtitle: Text(
           channel.group,
-          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          style: const TextStyle(fontSize: 12, color: Color(0xFF8E98A6)),
         ),
         trailing: IconButton(
-          icon: Icon(Icons.delete_outline, size: 20, color: scheme.outline),
+          icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFF5A6472)),
           onPressed: onRemove,
         ),
       ),
