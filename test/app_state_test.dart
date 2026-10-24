@@ -13,6 +13,7 @@ void main() {
     name: '测试源',
     url: 'http://x/list.m3u',
     mirrors: ['http://x/mirror.m3u'],
+    assetPath: 'assets/playlists/cn_all.m3u8',
   );
 
   const m3uContent = '''
@@ -69,8 +70,26 @@ http://c/3.m3u8
 
       expect(state.loadError, isNull);
       expect(state.channels.length, 2);
-      expect(state.fallbackNote, contains('已自动使用'));
+      expect(state.fallbackNote, contains('加速通道'));
       expect(state.activeSource?.id, 'test_source');
+    });
+
+    test('网络全部失败时回退内置离线快照', () async {
+      final state = buildState();
+      // 未注入 assetLoader 时不应命中离线兜底
+      state.fetchText = (url) async => throw Exception('网络不可用（$url）');
+      await state.loadChannels(sampleSource);
+      expect(state.loadError, isNotNull);
+
+      // 注入 assetLoader 后应命中离线快照
+      final state2 = buildState();
+      state2.fetchText = (url) async => throw Exception('网络不可用（$url）');
+      state2.assetLoader = (path) async => m3uContent;
+      await state2.loadChannels(sampleSource);
+
+      expect(state2.loadError, isNull);
+      expect(state2.channels, isNotEmpty);
+      expect(state2.fallbackNote, contains('内置频道表'));
     });
 
     test('全部地址失败：loadError 非空', () async {

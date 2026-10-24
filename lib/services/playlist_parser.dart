@@ -116,15 +116,36 @@ class PlaylistParser {
   /// 归一化分组名（不同源对同类分组的叫法略有差异）。
   static String _normalizeGroup(String? group) {
     if (group == null || group.trim().isEmpty) return '未分组';
-    switch (group.trim()) {
+    final g = group.trim();
+    switch (g) {
       case '央视台':
         return '央视频道';
       case '卫视台':
         return '卫视频道';
       case '数字频道':
         return '其他频道';
+      // 部分条目使用英文分组名，统一转成中文
+      case 'General':
+      case 'general':
+        return '综合频道';
+      case 'News':
+      case 'news':
+        return '新闻频道';
+      case 'Sports':
+      case 'sports':
+        return '体育频道';
+      case 'Kids':
+      case 'Children':
+        return '卡通频道';
+      case 'Movie':
+      case 'Movies':
+        return '影视频道';
+      case 'Music':
+        return '音乐频道';
+      case 'Documentary':
+        return '纪录频道';
       default:
-        return group.trim();
+        return g;
     }
   }
 

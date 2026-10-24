@@ -7,12 +7,13 @@ class PlaySource {
     this.builtIn = false,
     this.epgUrl,
     this.mirrors = const [],
+    this.assetPath,
   });
 
   /// 唯一标识
   final String id;
 
-  /// 显示名称，如 "fanmingming IPv6"
+  /// 显示名称，如 "央视频道"
   final String name;
 
   /// 订阅链接（m3u 或 txt）
@@ -27,10 +28,14 @@ class PlaySource {
   /// 同内容镜像地址：主地址失败时按顺序尝试
   final List<String> mirrors;
 
+  /// 内置离线快照（assets 路径）。所有网络地址均失败时作为最后兜底，
+  /// 保证极端网络环境下仍能进入频道列表。
+  final String? assetPath;
+
   /// 全部候选地址（主地址 + 镜像），按尝试顺序
   List<String> get candidates => [url, ...mirrors];
 
-  /// 默认 EPG 接口（fanmingming/live 提供）
+  /// 默认 EPG 接口
   static const String defaultEpgUrl = 'https://live.fanmingming.cn/e.xml';
 
   PlaySource copyWith({String? epgUrl}) => PlaySource(
@@ -40,6 +45,7 @@ class PlaySource {
         builtIn: builtIn,
         epgUrl: epgUrl ?? this.epgUrl,
         mirrors: mirrors,
+        assetPath: assetPath,
       );
 
   Map<String, dynamic> toJson() => {
@@ -49,6 +55,7 @@ class PlaySource {
         'builtIn': builtIn,
         'epgUrl': epgUrl,
         'mirrors': mirrors,
+        'assetPath': assetPath,
       };
 
   factory PlaySource.fromJson(Map<String, dynamic> json) => PlaySource(
@@ -58,5 +65,6 @@ class PlaySource {
         builtIn: json['builtIn'] as bool? ?? false,
         epgUrl: json['epgUrl'] as String?,
         mirrors: (json['mirrors'] as List?)?.cast<String>() ?? const [],
+        assetPath: json['assetPath'] as String?,
       );
 }

@@ -20,6 +20,10 @@ class AppState extends ChangeNotifier {
   /// 数据获取函数（默认走网络，测试时可注入假数据）。
   Future<String> Function(String url) fetchText = StreamLoader.fetchText;
 
+  /// 内置离线快照读取函数（由 main 注入 rootBundle.loadString）。
+  /// 未注入时离线兜底不生效，不影响其他功能。
+  Future<String?> Function(String assetPath)? assetLoader;
+
   // ---------- 源与频道 ----------
 
   /// 全部可用源（内置 + 自定义）
@@ -128,8 +132,8 @@ class AppState extends ChangeNotifier {
     final others = _fallbackSources(current);
     for (final s in others.take(2)) {
       try {
-        final text = await fetchText(s.candidates.first);
-        final parsed = PlaylistParser.parse(text, sourceName: s.name);
+        final r = await _fetchFirst(s.candidates.take(2).toList());
+        final parsed = PlaylistParser.parse(r.text, sourceName: s.name);
         if (parsed.channels.isNotEmpty) {
           _mergeChannelPool(parsed.channels);
         }
@@ -144,7 +148,11 @@ class AppState extends ChangeNotifier {
 
   /// 加载指定源的频道列表。
   ///
-  /// 失败时自动按序尝试：该源镜像地址 → 其他可用源（内置优先）。
+  /// 策略（逐级降级，保证不出现"加载失败"）：
+  /// 1. 当前源的全部通道**并发竞速**（主地址与镜像同时请求，最快者胜出）
+  /// 2. 换其他内置源的首选通道再试
+  /// 3. 全部网络通道不可用 → App 内置离线快照
+  ///
   /// 加载期间 [loading] 为 true，用于 UI 反馈。
   Future<void> loadChannels(PlaySource source) async {
     loading = true;
@@ -152,53 +160,112 @@ class AppState extends ChangeNotifier {
     fallbackNote = null;
     notifyListeners();
 
-    // 1) 组装候选地址：目标源主地址+镜像 → 其他源（内置优先）
-    final ordered = <String>[];
-    void addCandidates(PlaySource s) {
-      for (final u in s.candidates) {
-        if (!ordered.contains(u)) ordered.add(u);
-      }
-    }
-
-    addCandidates(source);
-    for (final s in _fallbackSources(source)) {
-      addCandidates(s);
-    }
-
-    // 2) 依次尝试
     String? lastError;
     String? usedUrl;
-    for (final url in ordered) {
-      try {
-        final text = await fetchText(url);
-        final parsed = PlaylistParser.parse(text, sourceName: source.name);
-        if (parsed.channels.isEmpty) {
-          throw Exception('播放列表为空，请检查源地址');
+    List<Channel>? loaded;
+
+    // 1) 当前源全部通道并发竞速
+    try {
+      final r = await _fetchFirst(source.candidates);
+      final parsed = PlaylistParser.parse(r.text, sourceName: source.name);
+      if (parsed.channels.isEmpty) throw Exception('播放列表为空');
+      loaded = parsed.channels;
+      usedUrl = r.url;
+      epgUrl = parsed.epgUrl;
+    } catch (e) {
+      lastError = e.toString();
+
+      // 2) 其他内置源再试（每个源取其前两个通道并发）
+      for (final s in _fallbackSources(source).take(3)) {
+        try {
+          final r = await _fetchFirst(s.candidates.take(2).toList());
+          final parsed = PlaylistParser.parse(r.text, sourceName: source.name);
+          if (parsed.channels.isEmpty) continue;
+          loaded = parsed.channels;
+          usedUrl = r.url;
+          epgUrl = parsed.epgUrl;
+          lastError = null;
+          break;
+        } catch (e2) {
+          lastError = e2.toString();
         }
-        // 同源多地址合并（一个频道保留一个条目，其余作为备用）
-        channels = PlaylistParser.mergeDuplicateChannels(parsed.channels);
-        activeSource = source;
-        epgUrl = parsed.epgUrl;
-        _mergeChannelPool(channels);
-        _rebuildGroups();
-        await _store.setLastSourceId(source.id);
-        usedUrl = url;
-        lastError = null;
-        break;
-      } catch (e) {
-        lastError = e.toString();
       }
     }
 
-    // 3) 结果与提示
-    if (lastError != null) {
-      loadError = lastError;
-    } else if (usedUrl != null && usedUrl != source.url) {
-      final usedName = _nameOfUrl(usedUrl) ?? source.name;
-      fallbackNote = '「${source.name}」不可用，已自动使用 $usedName';
+    if (loaded != null) {
+      // 同源多地址合并（一个频道保留一个条目，其余作为备用）
+      channels = PlaylistParser.mergeDuplicateChannels(loaded);
+      activeSource = source;
+      _mergeChannelPool(channels);
+      _rebuildGroups();
+      await _store.setLastSourceId(source.id);
+      if (usedUrl != null && usedUrl != source.url) {
+        // 并发竞速下镜像可能先返回，用中性文案避免"主地址坏了"的误报
+        fallbackNote = '已通过加速通道加载频道列表';
+      }
+    } else {
+      // 3) 全部网络通道失败 → App 内置离线快照
+      final offline = await _loadOfflineChannels(source);
+      if (offline != null) {
+        channels = PlaylistParser.mergeDuplicateChannels(offline);
+        activeSource = source;
+        epgUrl = null;
+        _mergeChannelPool(channels);
+        _rebuildGroups();
+        fallbackNote = '网络源暂时无法访问，已使用 App 内置频道表，可下拉重试';
+      } else {
+        loadError = lastError;
+      }
     }
     loading = false;
     notifyListeners();
+  }
+
+  /// 并发请求多个地址，返回**最先成功**的那个 (url, text)。
+  ///
+  /// 相比串行重试，最坏等待时间等于单个超时，而不是 N 倍超时。
+  Future<({String url, String text})> _fetchFirst(List<String> urls) {
+    if (urls.isEmpty) {
+      return Future.error(Exception('没有可用的源地址'));
+    }
+    final completer = Completer<({String url, String text})>();
+    var pending = urls.length;
+    final errors = <String>[];
+
+    for (final url in urls) {
+      fetchText(url).then(
+        (text) {
+          if (!completer.isCompleted) {
+            completer.complete((url: url, text: text));
+          }
+        },
+        onError: (Object e) {
+          errors.add('$e');
+          pending--;
+          if (pending == 0 && !completer.isCompleted) {
+            completer.completeError(
+              Exception(errors.isEmpty ? '全部地址均不可用' : errors.first),
+            );
+          }
+        },
+      );
+    }
+    return completer.future;
+  }
+
+  /// 读取内置离线快照并解析；不可用时返回 null。
+  Future<List<Channel>?> _loadOfflineChannels(PlaySource source) async {
+    final loader = assetLoader;
+    final path = source.assetPath;
+    if (loader == null || path == null) return null;
+    try {
+      final text = await loader(path);
+      if (text == null || text.trim().isEmpty) return null;
+      final parsed = PlaylistParser.parse(text, sourceName: source.name);
+      return parsed.channels.isEmpty ? null : parsed.channels;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// 其他可作为兜底的源（内置优先，排除 [source] 自身）。
@@ -206,14 +273,6 @@ class AppState extends ChangeNotifier {
     final rest = sources.where((s) => s.id != source.id).toList();
     rest.sort((a, b) => (a.builtIn ? 0 : 1) - (b.builtIn ? 0 : 1));
     return rest;
-  }
-
-  /// 根据地址反查所属源名称。
-  String? _nameOfUrl(String url) {
-    for (final s in sources) {
-      if (s.candidates.contains(url)) return s.name;
-    }
-    return null;
   }
 
   void _rebuildGroups() {

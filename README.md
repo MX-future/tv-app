@@ -55,21 +55,37 @@ flutter build ios --release
 
 ## 📖 直播源说明
 
-内置源来自 [best-fan/iptv-sources](https://github.com/best-fan/iptv-sources)，由 Jenkins 每日自动采集并检测有效性（响应时间、可播放性），全部为 IPv4 / HTTPS 地址，无需 IPv6 网络：
+内置源来自 [best-fan/iptv-sources](https://github.com/best-fan/iptv-sources)，由 Jenkins 每日自动采集并检测有效性（响应时间、可播放性），全部为 IPv4 地址，无需 IPv6 网络：
 
-| 源名称 | 地址 | 说明 |
+| 源名称 | 文件 | 说明 |
 | ------ | ---- | ---- |
-| 全部频道 | `https://raw.githubusercontent.com/best-fan/iptv-sources/master/cn_all.m3u8` | 完整列表（央视+卫视+付费+体育+卡通等），单频道多源 |
-| 央视频道 | `https://raw.githubusercontent.com/best-fan/iptv-sources/master/cn_cctv.m3u8` | CCTV-1 ~ 17、4K 等 |
-| 卫视频道 | `https://raw.githubusercontent.com/best-fan/iptv-sources/master/cn_province.m3u8` | 省级卫视 |
-| 付费频道 | `https://raw.githubusercontent.com/best-fan/iptv-sources/master/cn_pay.m3u8` | 凤凰、金鹰等 |
+| 全部频道 | `cn_all.m3u8` | 完整列表（央视+卫视+付费+体育+卡通等），单频道多源 |
+| 央视频道 | `cn_cctv.m3u8` | CCTV-1 ~ 17、4K 等 |
+| 卫视频道 | `cn_province.m3u8` | 省级卫视 |
+| 付费频道 | `cn_pay.m3u8` | 凤凰、金鹰等 |
 
-每个源自动配置国内加速镜像 `raw.staticdn.net`，主地址不可达时自动切换；同一频道多个播放地址会在播放失败时自动顺延尝试。
+### 三层容错，保证不出现「加载失败」
+
+GitHub 原始地址（`raw.githubusercontent.com`）在国内经常被阻断，因此每个源配置 **5 个访问通道**，**并发竞速**取最快响应者：
+
+| 顺序 | 通道 | 实测 |
+| ---- | ---- | ---- |
+| 1 | `cdn.jsdelivr.net/gh/best-fan/iptv-sources@master/…` | ~0.7s ✅ |
+| 2 | `gh-proxy.com/https://raw.githubusercontent.com/…` | ~0.7s ✅ |
+| 3 | `ghfast.top/https://raw.githubusercontent.com/…` | ~2.4s ✅ |
+| 4 | `raw.githubusercontent.com/…` | 国内常被阻断 |
+| 5 | `raw.staticdn.net/…` | 时好时坏 |
+
+- **并发竞速**：所有通道同时请求，最快者胜出——最坏等待时间等于单次超时（10s），而不是 N 倍
+- **跨源兜底**：当前源全军覆没时，自动换其他内置源再试
+- **内置离线快照**：上述全部失败时，读取打包在 App 内的 `assets/playlists/*.m3u8`（326 条频道，随版本更新），**任何网络环境下都能进入频道列表**
+
+同一频道在源文件里常有 5~8 个播放地址，已去重合并为一个频道条目，播放失败时自动顺延切换（页面顶部显示「备用源 x/n」）。
 
 在 App「我的 → 添加自定义源」中可粘贴任意 m3u / txt 订阅链接，例如：
 
 ```
-https://raw.githubusercontent.com/best-fan/iptv-sources/master/cn_all.m3u8
+https://cdn.jsdelivr.net/gh/best-fan/iptv-sources@master/cn_all.m3u8
 https://raw.githubusercontent.com/你的账号/你的仓库/main/live.m3u
 ```
 

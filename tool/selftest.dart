@@ -104,13 +104,18 @@ http://x/4.m3u8
 
 void testEpgParser() {
   section('EpgParser');
+  // EpgParser 只保留"当天"节目，因此测试数据必须用今天日期（写死会随时间失效）
+  final now = DateTime.now();
+  final ds = '${now.year}'
+      '${now.month.toString().padLeft(2, '0')}'
+      '${now.day.toString().padLeft(2, '0')}';
   final xml = '''
 <tv>
-  <programme start="20260810130000 +0800" stop="20260810140000 +0800" channel="CCTV-1">
+  <programme start="${ds}130000 +0800" stop="${ds}140000 +0800" channel="CCTV-1">
     <title lang="zh">新闻30分</title>
     <desc lang="zh">今日要闻</desc>
   </programme>
-  <programme start="20260810150000 +0800" stop="20260810160000 +0800" channel="CCTV-2">
+  <programme start="${ds}150000 +0800" stop="${ds}160000 +0800" channel="CCTV-2">
     <title>节目B</title>
   </programme>
 </tv>
@@ -134,15 +139,25 @@ void testEpgParser() {
   // 排序
   final sorted = EpgParser.parse('''
 <tv>
-  <programme start="20260810140000 +0800" stop="20260810150000 +0800" channel="T">
+  <programme start="${ds}140000 +0800" stop="${ds}150000 +0800" channel="T">
     <title>后</title>
   </programme>
-  <programme start="20260810100000 +0800" stop="20260810110000 +0800" channel="T">
+  <programme start="${ds}100000 +0800" stop="${ds}110000 +0800" channel="T">
     <title>先</title>
   </programme>
 </tv>
 ''');
   eq(sorted['T']!.map((p) => p.title).toList(), ['先', '后'], '时间排序');
+
+  // 非当天节目应被过滤
+  final otherDay = EpgParser.parse('''
+<tv>
+  <programme start="20200101130000 +0800" stop="20200101140000 +0800" channel="OLD">
+    <title>很久以前</title>
+  </programme>
+</tv>
+''');
+  ok(otherDay.isEmpty, '过滤非当天节目');
 
   // 空输入
   ok(EpgParser.parse('').isEmpty, '空输入');

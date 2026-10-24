@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 class StreamLoader {
   const StreamLoader._();
 
-  static const int _timeoutSeconds = 15;
+  static const int _timeoutSeconds = 10;
 
   /// 部分 CDN（如 CloudFlare）会拒绝无 UA 的请求，这里固定一个常见 UA。
   static const Map<String, String> _headers = {

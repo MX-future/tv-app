@@ -1,15 +1,27 @@
 // EPG（e.xml）解析器测试：XMLTV 时间、节目提取、今日过滤、频道匹配。
+//
+// 注意：EpgParser 只保留"当天"节目，因此测试数据必须使用动态的今天日期，
+// 写死日期会导致测试随日期推移而失效。
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tv_app/services/epg_parser.dart';
 
+/// 今天的 yyyyMMdd 时间戳前缀。
+String todayStamp() {
+  final now = DateTime.now();
+  String p(int n) => n.toString().padLeft(2, '0');
+  return '${now.year}${p(now.month)}${p(now.day)}';
+}
+
 void main() {
+  final ds = todayStamp();
+
   group('EpgParser.parse', () {
     test('解析 programme 块（标题/描述/时间）', () {
-      const xml = '''
+      final xml = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <tv generator-info-name="xmltv">
   <channel id="CCTV-1"><display-name>CCTV-1</display-name></channel>
-  <programme start="20260810130000 +0800" stop="20260810140000 +0800" channel="CCTV-1">
+  <programme start="${ds}130000 +0800" stop="${ds}140000 +0800" channel="CCTV-1">
     <title lang="zh">新闻30分</title>
     <desc lang="zh">今日要闻</desc>
   </programme>
@@ -21,18 +33,18 @@ void main() {
       expect(list.single.title, '新闻30分');
       expect(list.single.desc, '今日要闻');
       expect(list.single.channel, 'CCTV-1');
-      // 2026-08-10 13:00:00 +0800 = 本地 13:00（测试机若为 +0800 时区）
+      // 13:00 +0800 = 本地 13:00（测试机为 +0800 时区）
       expect(list.single.start.hour, 13);
       expect(list.single.end.hour, 14);
     });
 
     test('按频道名过滤（channelName 参数）', () {
-      const xml = '''
+      final xml = '''
 <tv>
-  <programme start="20260810100000 +0800" stop="20260810110000 +0800" channel="CCTV-1">
+  <programme start="${ds}100000 +0800" stop="${ds}110000 +0800" channel="CCTV-1">
     <title>节目A</title>
   </programme>
-  <programme start="20260810100000 +0800" stop="20260810110000 +0800" channel="CCTV-2">
+  <programme start="${ds}100000 +0800" stop="${ds}110000 +0800" channel="CCTV-2">
     <title>节目B</title>
   </programme>
 </tv>
@@ -43,9 +55,9 @@ void main() {
     });
 
     test('频道名模糊匹配（CCTV-1 匹配 CCTV1）', () {
-      const xml = '''
+      final xml = '''
 <tv>
-  <programme start="20260810100000 +0800" stop="20260810110000 +0800" channel="CCTV1">
+  <programme start="${ds}100000 +0800" stop="${ds}110000 +0800" channel="CCTV1">
     <title>节目A</title>
   </programme>
 </tv>
@@ -55,17 +67,15 @@ void main() {
     });
 
     test('只保留今天（0点~24点）的节目', () {
-      // 今天 2026-08-10 的样本；昨天/明天的节目应被过滤
       final now = DateTime.now();
       String pad(int n) => n.toString().padLeft(2, '0');
-      final today = now;
       final yesterday = now.subtract(const Duration(days: 1));
       final tomorrow = now.add(const Duration(days: 1));
       String fmt(DateTime t, int h, int m) =>
           '${t.year}${pad(t.month)}${pad(t.day)}${pad(h)}${pad(m)}00';
       final xml = '''
 <tv>
-  <programme start="${fmt(today, 10, 0)} +0800" stop="${fmt(today, 11, 0)} +0800" channel="T">
+  <programme start="${fmt(now, 10, 0)} +0800" stop="${fmt(now, 11, 0)} +0800" channel="T">
     <title>今天节目</title>
   </programme>
   <programme start="${fmt(yesterday, 20, 0)} +0800" stop="${fmt(yesterday, 21, 0)} +0800" channel="T">
@@ -82,12 +92,12 @@ void main() {
     });
 
     test('按开始时间升序排序', () {
-      const xml = '''
+      final xml = '''
 <tv>
-  <programme start="20260810140000 +0800" stop="20260810150000 +0800" channel="T">
+  <programme start="${ds}140000 +0800" stop="${ds}150000 +0800" channel="T">
     <title>后</title>
   </programme>
-  <programme start="20260810100000 +0800" stop="20260810110000 +0800" channel="T">
+  <programme start="${ds}100000 +0800" stop="${ds}110000 +0800" channel="T">
     <title>先</title>
   </programme>
 </tv>
@@ -104,9 +114,9 @@ void main() {
     });
 
     test('desc 缺失时 title 兜底', () {
-      const xml = '''
+      final xml = '''
 <tv>
-  <programme start="20260810100000 +0800" stop="20260810110000 +0800" channel="T">
+  <programme start="${ds}100000 +0800" stop="${ds}110000 +0800" channel="T">
     <title>仅有标题</title>
   </programme>
 </tv>

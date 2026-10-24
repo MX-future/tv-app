@@ -41,10 +41,20 @@ class Channel {
   /// EPG 节目单匹配键
   String get epgKey => tvgName ?? name;
 
-  /// 频道名归一化（用于跨源匹配同名频道）
+  /// 频道名归一化（用于跨源匹配同名频道）。
+  ///
+  /// 忽略大小写、空白与连接符号，并去掉画质后缀（`(720p)`、`HD`、`高清` 等），
+  /// 使 `CCTV-1`、`CCTV1`、`CCTV-1 (720p)` 视为同一频道，避免列表里重复出现。
   static String normalizeName(String name) => name
       .toLowerCase()
-      .replaceAll(RegExp(r'[\s\-+．.·]'), '');
+      // 去掉括号中的分辨率标记：(720p) （1080p） [576i] 等
+      .replaceAll(
+        RegExp(r'[\(（\[【]\s*(?:2160|1080|720|576|480)[pi]?\s*[\)）\]】]'),
+        '',
+      )
+      // 去掉结尾的画质词
+      .replaceAll(RegExp(r'(?:hd|sd|高清|超清|标清|蓝光)$'), '')
+      .replaceAll(RegExp(r'[\s\-+．.·_]'), '');
 
   String get normalizedKey => normalizeName(epgKey);
 

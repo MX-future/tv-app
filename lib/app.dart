@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'pages/home_page.dart';
 import 'state/app_state.dart';
@@ -34,6 +35,14 @@ class _TvAppState extends State<TvApp> {
   @override
   void initState() {
     super.initState();
+    // 注入内置离线快照读取能力：所有网络源不可用时仍能展示频道列表
+    _state.assetLoader = (path) async {
+      try {
+        return await rootBundle.loadString(path);
+      } catch (_) {
+        return null;
+      }
+    };
     _state.init();
   }
 
